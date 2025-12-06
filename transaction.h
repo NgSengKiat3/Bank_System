@@ -5,7 +5,6 @@
 
 void deposit_money();
 void withdraw_money();
-void transfer_money();
-void delete_account();
+void remittance();
 
 #endif

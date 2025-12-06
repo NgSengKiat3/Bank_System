@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <dirent.h>
 #include "account.h"
 #include "transaction.h"
 #include "file_io.h"
@@ -9,7 +10,6 @@
 void display_menu();
 int handle_menu_choice(char *input);
 void show_session_info();
-int get_account_count();
 void clear_input_buffer();
 
 int main()
@@ -17,7 +17,7 @@ int main()
     char input[20];
     int choice;
 
-    printf("=== BANKING SYSTEM APPLICATION ===\n");
+    printf("BANKING SYSTEM APPLICATION\n");
     create_database_dir();
     show_session_info();
 
@@ -39,14 +39,14 @@ int main()
 void display_menu()
 {
     printf("\n");
-    printf("=== BANKING SYSTEM MENU ===\n");
+    printf("BANKING SYSTEM MENU\n");
     printf("1. Create New Account (or 'create')\n");
     printf("2. Delete Account (or 'delete')\n");
     printf("3. Deposit (or 'deposit')\n");
     printf("4. Withdrawal (or 'withdrawal')\n");
     printf("5. Remittance (or 'remittance')\n");
     printf("0. Exit (or 'exit')\n");
-    printf("============================\n");
+    printf("-----------------------\n");
 }
 
 int handle_menu_choice(char *input)
@@ -91,30 +91,6 @@ void show_session_info()
 {
     time_t now = time(NULL);
     printf("Session started: %s", ctime(&now));
-    printf("Loaded accounts: %d\n", get_account_count());
-}
-
-int get_account_count()
-{
-    DIR *dir;
-    struct dirent *entry;
-    int count = 0;
-
-    dir = opendir("database");
-    if (dir == NULL)
-        return 0;
-
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (strstr(entry->d_name, "database.txt") != NULL &&
-            strcmp(entry->d_name, "transaction.log") != 0 &&
-            strcmp(entry->d_name, "index.txt") != 0)
-        {
-            count++;
-        }
-    }
-    closedir(dir);
-    return count;
 }
 
 void clear_input_buffer()

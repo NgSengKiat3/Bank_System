@@ -2,8 +2,8 @@
 #define ACCOUNT_H
 
 #define MAX_NAME_LENGTH 100
-#define MAX_ID_LENGTH 20
-#define MAX_PIN_LENGTH 5
+#define MAX_ID_LENGTH 9
+#define MAX_PIN_LENGTH 4
 #define MAX_FILENAME_LENGTH 50
 
 typedef struct
@@ -18,10 +18,11 @@ typedef struct
 
 // Account management
 BankAccount create_new_account();
-int delete_account();
+void delete_account();
 BankAccount load_account(long account_number);
 int save_account(BankAccount account);
 int authenticate_account(long account_number, char *pin);
+int validate_id_number(char *id);
 long generate_account_number();
 int is_account_number_unique(long acc_number);
 void print_account_info(BankAccount account);

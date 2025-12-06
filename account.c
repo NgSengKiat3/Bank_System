@@ -5,6 +5,29 @@
 #include <ctype.h>
 #include <dirent.h>
 #include "account.h"
+#include "file_io.h"
+
+void save_account_to_file(BankAccount account)
+{
+    char filename[50];
+    sprintf(filename, "database/%ld.txt", account.account_number);
+
+    FILE *file = fopen(filename, "w");
+    if (file == NULL)
+    {
+        printf("Error: Could not create account file!\n");
+        return;
+    }
+
+    fprintf(file, "Name: %s\n", account.name);
+    fprintf(file, "ID: %s\n", account.id);
+    fprintf(file, "Account Type: %s\n", account.account_type);
+    fprintf(file, "PIN: %s\n", account.pin);
+    fprintf(file, "Account Number: %ld\n", account.account_number);
+    fprintf(file, "Balance: %.2lf\n", account.balance);
+
+    fclose(file);
+}
 
 // Create new account (existing code)
 BankAccount create_new_account()
@@ -14,24 +37,28 @@ BankAccount create_new_account()
     printf("\nCREATE NEW BANK ACCOUNT\n");
 
     printf("Enter full name: ");
-    getchar(); // Clear input buffer
     fgets(new_account.name, MAX_NAME_LENGTH, stdin);
     new_account.name[strcspn(new_account.name, "\n")] = 0;
 
-    printf("Enter identification number: ");
-    fgets(new_account.id, MAX_ID_LENGTH, stdin);
-    new_account.id[strcspn(new_account.id, "\n")] = 0;
+    int valid_id = 0;
+    while (!valid_id)
+    {
+        printf("Enter identification number (8 digits): ");
+        fgets(new_account.id, MAX_ID_LENGTH, stdin);
+        new_account.id[strcspn(new_account.id, "\n")] = 0;
+        valid_id = validate_id_number(new_account.id);
+    }
 
     int valid_type = 0;
     while (!valid_type)
     {
-        printf("Enter account type (Savings/Current): ");
+        printf("Enter account type (Saving/Current): ");
         char type[10];
         scanf("%s", type);
 
-        if (strcmp(type, "Savings") == 0 || strcmp(type, "savings") == 0)
+        if (strcmp(type, "Saving") == 0 || strcmp(type, "saving") == 0)
         {
-            strcpy(new_account.account_type, "Savings");
+            strcpy(new_account.account_type, "Saving");
             valid_type = 1;
         }
         else if (strcmp(type, "Current") == 0 || strcmp(type, "current") == 0)
@@ -41,7 +68,7 @@ BankAccount create_new_account()
         }
         else
         {
-            printf("Invalid account type! Please enter 'Savings' or 'Current'.\n");
+            printf("Invalid account type! Please enter 'Saving' or 'Current'.\n");
         }
     }
 
@@ -73,8 +100,17 @@ BankAccount create_new_account()
     new_account.account_number = generate_account_number();
     new_account.balance = 0.0;
 
+    // Display new account info
     save_account_to_file(new_account);
     printf("\nAccount created successfully!\n");
+    printf("-------------------------------\n");
+    printf("Please remember your account number, ID and PIN\n");
+    printf("Account Number: %ld\n", new_account.account_number);
+    printf("Name: %s\n", new_account.name);
+    printf("Account Type: %s\n", new_account.account_type);
+    printf("Initial Balance: RM %.2lf\n", new_account.balance);
+    printf("-------------------------------\n");
+    printf("Note: Account number is needed for all future transactions.");
     print_account_info(new_account);
 
     return new_account;
@@ -109,34 +145,11 @@ int is_account_number_unique(long acc_number)
     return 1; // Unique
 }
 
-void save_account_to_file(BankAccount account)
-{
-    char filename[50];
-    sprintf(filename, "database/%ld.txt", account.account_number);
-
-    FILE *file = fopen(filename, "w");
-    if (file == NULL)
-    {
-        printf("Error: Could not create account file!\n");
-        return;
-    }
-
-    fprintf(file, "Name: %s\n", account.name);
-    fprintf(file, "ID: %s\n", account.id);
-    fprintf(file, "Account Type: %s\n", account.account_type);
-    fprintf(file, "PIN: %s\n", account.pin);
-    fprintf(file, "Account Number: %ld\n", account.account_number);
-    fprintf(file, "Balance: %.2lf\n", account.balance);
-
-    fclose(file);
-    printf("Account saved to: %s\n", filename);
-}
-
 void print_account_info(BankAccount account)
 {
     printf("\nAccount Information\n");
-    printf("\n--------------------\n")
-        printf("Account Number: %ld\n", account.account_number);
+    printf("\n--------------------\n");
+    printf("Account Number: %ld\n", account.account_number);
     printf("Name: %s\n", account.name);
     printf("ID: %s\n", account.id);
     printf("Account Type: %s\n", account.account_type);
@@ -261,14 +274,14 @@ int get_account_count()
 
     while ((entry = readdir(dir)) != NULL)
     {
-        if (strstr(entry->d_name, ".txt") != NULL &&
-            strcmp(entry->d_name, "transaction.log") != 0)
+        if (strstr(entry->d_name, "database.txt") != NULL &&
+            strcmp(entry->d_name, "transaction.log") != 0 &&
+            strcmp(entry->d_name, "index.txt") != 0)
         {
             count++;
         }
     }
     closedir(dir);
-
     return count;
 }
 
@@ -307,5 +320,111 @@ void list_all_accounts()
     if (count == 0)
     {
         printf("No accounts found.\n");
+    }
+}
+
+int validate_id_number(char *id)
+{
+    if (strlen(id) == 0)
+    {
+        printf("Empty ID number\n");
+        return 0;
+    }
+
+    if (strlen(id) != 8)
+    {
+        printf("ID should be 8 digits\n");
+        return 0;
+    }
+
+    for (size_t i = 0; i < strlen(id); i++)
+    {
+        if (!isdigit(id[i]))
+        {
+            printf("ID number only accept digit numbers\n");
+            printf("You entered: '%s'\n", id);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+void delete_account()
+{
+    printf("\nDELETE ACCOUNT\n");
+    // Show account
+    list_all_accounts();
+
+    long acc_number;
+    char pin[5], last_four_id[5];
+
+    printf("\nEnter account number to delete: ");
+    if (scanf("%ld", &acc_number) != 1)
+    {
+        printf("Invalid account number!\n");
+        while (getchar() != '\n')
+            ;
+        return;
+    }
+
+    if (!account_exists(acc_number))
+    {
+        printf("Account not found!\n");
+        return;
+    }
+
+    BankAccount account = load_account(acc_number);
+
+    // Triple verification
+    printf("Enter last 4 characters of ID: ");
+    scanf("%4s", last_four_id);
+
+    printf("Enter 4-digit PIN: ");
+    scanf("%4s", pin);
+
+    // Get last 4 of stored ID
+    char stored_last_four[5];
+    int id_len = strlen(account.id);
+    if (id_len >= 4)
+    {
+        strncpy(stored_last_four, account.id + (id_len - 4), 4);
+        stored_last_four[4] = '\0';
+    }
+    else
+    {
+        strcpy(stored_last_four, account.id);
+    }
+
+    if (!verify_pin(acc_number, pin) || strcmp(last_four_id, stored_last_four) != 0)
+    {
+        printf("Verification failed! Incorrect PIN or ID.\n");
+        return;
+    }
+
+    // Final confirmation
+    char confirm;
+    printf("\nWARNING: This will permanently delete account %ld\n", acc_number);
+    printf("Are you sure? (y/n): ");
+    scanf(" %c", &confirm);
+
+    if (confirm != 'y' && confirm != 'Y')
+    {
+        printf("Deletion cancelled.\n");
+        return;
+    }
+
+    // Delete account file
+    char filename[50];
+    sprintf(filename, "database/%ld.txt", acc_number);
+
+    if (remove(filename) == 0)
+    {
+        log_transaction("DELETE_ACCOUNT", acc_number, 0);
+        printf("Account deleted successfully!\n");
+    }
+    else
+    {
+        printf("Error deleting account file!\n");
     }
 }
